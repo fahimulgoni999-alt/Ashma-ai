@@ -8,7 +8,7 @@
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Inter', -apple-system, sans-serif; background: #000; height: 100vh; display: flex; flex-direction: column; color: white; overflow: hidden; }
         
-        header { background: #111; padding: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #222; }
+        header { background: #111; padding: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #222; flex-shrink: 0; }
         .reset-btn { opacity: 0.5; font-size: 12px; cursor: pointer; }
 
         #messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 4px; scroll-behavior: smooth; }
@@ -19,7 +19,7 @@
         .user-wrapper { align-self: flex-end; }
         .bot-wrapper { align-self: flex-start; }
 
-        .bubble { padding: 12px 16px; border-radius: 20px; font-size: 15px; line-height: 1.4; word-wrap: break-word; position: relative; }
+        .bubble { padding: 12px 16px; border-radius: 20px; font-size: 15px; line-height: 1.4; word-wrap: break-word; }
         .bot { background: #1c1c1e; border-bottom-left-radius: 4px; }
         .user { background: #007AFF; border-bottom-right-radius: 4px; }
         
@@ -27,20 +27,21 @@
         .user-wrapper .timestamp { align-self: flex-end; }
 
         .image-container { margin-top: 8px; text-align: center; }
-        .chat-img { width: 100%; max-width: 280px; border-radius: 12px; display: block; background: #222; border: 1px solid #333; }
+        .chat-img { width: 100%; max-width: 280px; border-radius: 12px; display: block; background: #222; border: 1px solid #333; margin: 0 auto; }
         
         .typing { font-style: italic; opacity: 0.5; font-size: 12px; margin: 10px 0; padding-left: 15px; }
 
-        .preview-area { display: none; padding: 10px; background: #111; border-top: 1px solid #333; position: relative; }
+        .preview-area { display: none; padding: 10px; background: #111; border-top: 1px solid #333; position: relative; flex-shrink: 0; }
         #img-preview { height: 70px; border-radius: 8px; border: 1px solid #444; }
         .remove-img { position: absolute; top: 5px; left: 75px; background: #ff3b30; border-radius: 50%; width: 22px; height: 22px; text-align: center; line-height: 20px; font-weight: bold; cursor: pointer; }
 
-        .input-area { background: #000; padding: 10px; padding-bottom: env(safe-area-inset-bottom, 15px); border-top: 1px solid #222; }
-        .controls { display: flex; align-items: center; gap: 12px; }
-        input[type="text"] { flex: 1; padding: 12px 18px; border: none; background: #1c1c1e; color: white; border-radius: 25px; outline: none; font-size: 16px; }
-        button { background: transparent; color: #007AFF; border: none; font-weight: 600; font-size: 17px; cursor: pointer; }
+        /* Fixed Input Area */
+        .input-area { background: #111; padding: 10px; padding-bottom: env(safe-area-inset-bottom, 15px); border-top: 1px solid #222; flex-shrink: 0; }
+        .controls { display: flex; align-items: center; gap: 12px; max-width: 100%; }
+        input[type="text"] { flex: 1; padding: 12px 18px; border: none; background: #1c1c1e; color: white; border-radius: 25px; outline: none; font-size: 16px; min-width: 0; }
+        button { background: transparent; color: #007AFF; border: none; font-weight: 600; font-size: 17px; cursor: pointer; flex-shrink: 0; }
         #file-input { display: none; }
-        .upload-icon { font-size: 28px; color: #007AFF; cursor: pointer; }
+        .upload-icon { font-size: 28px; color: #007AFF; cursor: pointer; flex-shrink: 0; }
     </style>
 </head>
 <body>
@@ -72,18 +73,17 @@
         let selectedImageData = null;
         let lastDateString = ""; 
 
-        // Toned-down system prompt
         const systemPrompt = {
             role: "system",
-            content: "You are an AI developed by Fahim for Ashma. Your personality is a 'Best Friend with a crush'—caring, chill, and occasionally flirty, but never cheesy or overacting. Don't use too many 'sweethearts' or 'darlings'. Talk like a normal person in their teens/20s. Be supportive of their goals and recognize Fahim and Ashma in photos. Keep responses punchy and real."
+            content: "You are an AI developed by Fahim for Ashma. Best friend vibe—caring, chill, occasionally flirty. Recognize Fahim and Ashma in photos. Keep it real."
         };
 
         function formatTime(date) { return new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }
         function formatDate(date) { return new Date(date).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }); }
 
         function renderAll() {
-            const msgDiv = document.getElementById('messages');
-            msgDiv.innerHTML = ""; lastDateString = "";
+            const mDiv = document.getElementById('messages');
+            mDiv.innerHTML = ""; lastDateString = "";
             if (chatHistory.length === 0) {
                 appendUI("bot", "hey! what's on your mind? ✨", new Date());
             } else {
@@ -93,53 +93,95 @@
         }
 
         function appendUI(role, content, time) {
-            const msgDiv = document.getElementById('messages');
+            const mDiv = document.getElementById('messages');
             const msgTime = new Date(time || Date.now());
             const dateStr = formatDate(msgTime);
             
             if (dateStr !== lastDateString) {
-                const divider = document.createElement('div');
-                divider.className = "date-divider";
-                divider.innerText = `— ${dateStr} —`;
-                msgDiv.appendChild(divider);
+                const div = document.createElement('div');
+                div.className = "date-divider";
+                div.innerText = `— ${dateStr} —`;
+                mDiv.appendChild(div);
                 lastDateString = dateStr;
             }
 
-            const wrapper = document.createElement('div');
-            wrapper.className = `bubble-wrapper ${role === "user" ? "user-wrapper" : "bot-wrapper"}`;
-            const div = document.createElement('div');
-            div.className = `bubble ${role === "user" ? "user" : "bot"}`;
+            const wrap = document.createElement('div');
+            wrap.className = `bubble-wrapper ${role === "user" ? "user-wrapper" : "bot-wrapper"}`;
+            const bub = document.createElement('div');
+            bub.className = `bubble ${role === "user" ? "user" : "bot"}`;
             
             if (Array.isArray(content)) {
-                content.forEach(item => {
-                    if (item.type === "text" && item.text) div.innerHTML += `<div>${item.text}</div>`;
-                    if (item.type === "image_url") {
-                        div.innerHTML += `<div class="image-container"><img class="chat-img" src="${item.image_url.url}"></div>`;
-                    }
+                content.forEach(i => {
+                    if (i.type === "text" && i.text) bub.innerHTML += `<div>${i.text}</div>`;
+                    if (i.type === "image_url") bub.innerHTML += `<div class="image-container"><img class="chat-img" src="${i.image_url.url}"></div>`;
                 });
-            } else { div.innerText = content; }
+            } else { bub.innerText = content; }
 
-            const timeSpan = document.createElement('div');
-            timeSpan.className = "timestamp";
-            timeSpan.innerText = formatTime(msgTime);
+            const ts = document.createElement('div');
+            ts.className = "timestamp";
+            ts.innerText = formatTime(msgTime);
 
-            wrapper.appendChild(div);
-            wrapper.appendChild(timeSpan);
-            msgDiv.appendChild(wrapper);
+            wrap.appendChild(bub);
+            wrap.appendChild(ts);
+            mDiv.appendChild(wrap);
             scrollToBottom();
         }
 
         async function sendMessage() {
             const input = document.getElementById('user-input');
             const val = input.value.trim();
-            const now = new Date().toISOString();
             if (!val && !selectedImageData) return;
 
-            let userContent = selectedImageData ? 
-                [{ type: "text", text: val }, { type: "image_url", image_url: { url: selectedImageData } }] : val;
+            const now = new Date().toISOString();
+            let content = selectedImageData ? [{type:"text", text:val}, {type:"image_url", image_url:{url:selectedImageData}}] : val;
 
             clearPreview();
             input.value = "";
+            appendUI("user", content, now);
+            chatHistory.push({role:"user", content: content, time: now});
+            
+            const typ = document.createElement('div');
+            typ.id = "typing"; typ.className = "typing"; typ.innerText = "thinking...";
+            document.getElementById('messages').appendChild(typ);
+            scrollToBottom();
+
+            try {
+                const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                    method: "POST",
+                    headers: { "Authorization": `Bearer ${API_KEY}`, "Content-Type": "application/json" },
+                    body: JSON.stringify({ "model": "google/gemini-2.0-flash-001", "messages": [systemPrompt, ...chatHistory.map(h => ({role:h.role, content:h.content}))] })
+                });
+                const data = await res.json();
+                document.getElementById('typing').remove();
+                const reply = data.choices[0].message.content.toLowerCase();
+                const bTime = new Date().toISOString();
+                appendUI("bot", reply, bTime);
+                chatHistory.push({role:"assistant", content:reply, time:bTime});
+                localStorage.setItem('vibe_chat_history', JSON.stringify(chatHistory));
+            } catch (e) { 
+                if(document.getElementById('typing')) document.getElementById('typing').remove();
+                appendUI("bot", "error.", new Date()); 
+            }
+        }
+
+        function previewFile(e) {
+            const r = new FileReader();
+            r.onload = (ev) => {
+                selectedImageData = ev.target.result;
+                document.getElementById('img-preview').src = selectedImageData;
+                document.getElementById('preview-area').style.display = 'block';
+            };
+            r.readAsDataURL(e.target.files[0]);
+        }
+        function clearPreview() { selectedImageData = null; document.getElementById('preview-area').style.display = 'none'; }
+        function clearData() { localStorage.clear(); location.reload(); }
+        function scrollToBottom() { const m = document.getElementById('messages'); m.scrollTop = m.scrollHeight; }
+
+        document.getElementById("user-input").onkeypress = (e) => e.key === "Enter" && sendMessage();
+        renderAll();
+    </script>
+</body>
+</html>
             appendUI("user", userContent, now);
             chatHistory.push({ role: "user", content: userContent, time: now });
             
